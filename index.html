@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Drive Video Library</title>
+  <meta name="description" content="Stream your Google Drive videos without downloading" />
+  <meta name="theme-color" content="#111111" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DriveVids" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root {
+      --bg: #111111;
+      --bg2: #1a1a1a;
+      --bg3: #222222;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --text: #f0f0f0;
+      --text2: #999999;
+      --text3: #555555;
+      --accent: #e8a030;
+      --accent-bg: rgba(232,160,48,0.12);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overscroll-behavior: none; }
+
+    .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 480px; margin: 0 auto; }
+
+    /* Header */
+    .header { padding: 52px 1rem 1rem; background: var(--bg); border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+    .header h1 { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+    .header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+    /* Tabs */
+    .tabs { display: flex; background: var(--bg); border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+    .tab { flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 500; color: var(--text2); text-align: center; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Scroll area */
+    .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(16px + var(--safe-bottom)); }
+
+    /* Add section */
+    .add-wrap { padding: 1rem; }
+    .form-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+    .field { margin-bottom: 14px; }
+    .field:last-of-type { margin-bottom: 0; }
+    .field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 10px 12px; font-size: 15px;
+      border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+      background: var(--bg3); color: var(--text);
+      font-family: inherit; outline: none;
+      -webkit-appearance: none; appearance: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+    .field textarea { resize: none; height: 72px; }
+    .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+    .btn-save { width: 100%; margin-top: 14px; padding: 13px; background: var(--accent); border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; color: #111; cursor: pointer; transition: opacity 0.15s; }
+    .btn-save:active { opacity: 0.8; }
+
+    .hint-box { margin-top: 12px; background: var(--accent-bg); border: 0.5px solid rgba(232,160,48,0.25); border-radius: var(--radius-sm); padding: 10px 12px; }
+    .hint-box p { font-size: 12px; color: var(--accent); line-height: 1.6; }
+
+    /* Library */
+    .lib-wrap { padding: 1rem; }
+    .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .search-row input { flex: 1; padding: 9px 12px; font-size: 14px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg3); color: var(--text); font-family: inherit; outline: none; -webkit-appearance: none; }
+    .search-row input:focus { border-color: var(--accent); }
+    .search-row select { padding: 9px 28px 9px 10px; font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: var(--bg3); color: var(--text); font-family: inherit; outline: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+    .lib-count { font-size: 12px; color: var(--text3); margin-bottom: 10px; }
+
+    .video-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; display: flex; gap: 12px; }
+    .thumb { width: 76px; height: 52px; border-radius: var(--radius-sm); background: var(--bg3); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 24px; }
+    .card-body { flex: 1; min-width: 0; }
+    .card-title { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+    .cat-badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+    .card-date { font-size: 11px; color: var(--text3); }
+    .card-notes { font-size: 12px; color: var(--text2); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .btn-play { flex: 1; padding: 7px; background: var(--accent); border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: #111; cursor: pointer; }
+    .btn-play:active { opacity: 0.8; }
+    .btn-del { padding: 7px 12px; border: 0.5px solid var(--border2); border-radius: var(--radius-sm); background: transparent; color: var(--text3); font-size: 13px; cursor: pointer; }
+    .btn-del:active { background: var(--bg3); }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text3); }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty p { font-size: 14px; line-height: 1.6; }
+
+    /* Player */
+    .player-wrap { padding: 1rem; }
+    .video-container { background: #000; border-radius: var(--radius); overflow: hidden; position: relative; padding-top: 56.25%; border: 0.5px solid var(--border); }
+    .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+    .no-video-msg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text3); font-size: 14px; gap: 8px; }
+    .no-video-msg span { font-size: 32px; }
+    .now-playing { margin-top: 14px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: none; }
+    .np-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+    .np-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .np-meta { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 20px; padding: 9px 18px; font-size: 13px; color: var(--text); opacity: 0; transition: all 0.2s; pointer-events: none; white-space: nowrap; z-index: 999; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Section visibility */
+    .section { display: none; }
+    .section.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Drive Video Library</h1>
+    <p>Stream Google Drive videos — no downloads</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('library')">Library</div>
+    <div class="tab" onclick="switchTab('player')">Player</div>
+    <div class="tab" onclick="switchTab('add')">+ Add</div>
+  </div>
+
+  <div class="scroll-area">
+
+    <!-- LIBRARY -->
+    <div class="section active lib-wrap" id="tab-library">
+      <div class="search-row">
+        <input type="search" id="search-input" placeholder="Search videos..." oninput="renderLibrary()" />
+        <select id="cat-filter" onchange="renderLibrary()">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div class="lib-count" id="lib-count"></div>
+      <div id="library-list"></div>
+    </div>
+
+    <!-- PLAYER -->
+    <div class="section player-wrap" id="tab-player">
+      <div class="video-container">
+        <div class="no-video-msg" id="no-video-msg">
+          <span>&#9654;</span>
+          Select a video from Library
+        </div>
+        <iframe id="video-frame" src="" allowfullscreen allow="autoplay; fullscreen" style="display:none;"></iframe>
+      </div>
+      <div class="now-playing" id="now-playing">
+        <div class="np-label">Now Playing</div>
+        <div class="np-title" id="np-title"></div>
+        <div class="np-meta" id="np-meta"></div>
+      </div>
+    </div>
+
+    <!-- ADD -->
+    <div class="section add-wrap" id="tab-add">
+      <div class="form-card">
+        <div class="field">
+          <label>Google Drive Link *</label>
+          <input type="url" id="inp-url" placeholder="https://drive.google.com/file/d/..." autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Video Title *</label>
+          <input type="text" id="inp-title" placeholder="Enter a title" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="inp-cat">
+            <option>General</option>
+            <option>Home Decor</option>
+            <option>AI Videos</option>
+            <option>Marketing</option>
+            <option>Tutorials</option>
+            <option>Personal</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Notes (optional)</label>
+          <textarea id="inp-notes" placeholder="Any notes about this video..."></textarea>
+        </div>
+        <button class="btn-save" onclick="addVideo()">Save to Library</button>
+      </div>
+      <div class="hint-box">
+        <p>&#9432; Make sure your Drive video sharing is set to <strong>"Anyone with the link"</strong> — otherwise it won't stream.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'driveVideos_v2';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+}
+function save(v) { localStorage.setItem(KEY, JSON.stringify(v)); }
+
+function extractId(url) {
+  url = (url || '').trim();
+  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return m[1];
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return url;
+  return null;
+}
+
+function streamUrl(id) { return `https://drive.google.com/file/d/${id}/preview`; }
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2300);
+}
+
+function switchTab(name) {
+  ['library','player','add'].forEach((t,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', t === name);
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+  });
+  if (name === 'library') renderLibrary();
+}
+
+const catEmoji = { 'Home Decor':'🛋️', 'AI Videos':'🤖', 'Marketing':'📣', 'Tutorials':'📚', 'Personal':'🎬', 'General':'▶️' };
+
+function renderLibrary() {
+  const videos = load();
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  const catF = document.getElementById('cat-filter').value;
+
+  const cats = [...new Set(videos.map(v => v.cat))].sort();
+  const sel = document.getElementById('cat-filter');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">All</option>' + cats.map(c => `<option${c===prev?' selected':''}>${esc(c)}</option>`).join('');
+
+  const filtered = videos.filter(v =>
+    (!q || v.title.toLowerCase().includes(q) || (v.notes||'').toLowerCase().includes(q)) &&
+    (!catF || v.cat === catF)
+  );
+
+  document.getElementById('lib-count').textContent = filtered.length + ' video' + (filtered.length !== 1 ? 's' : '');
+
+  const list = document.getElementById('library-list');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📂</div><p>${videos.length ? 'No videos match your search.' : 'No videos yet.<br>Tap + Add to get started!'}</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(v => `
+    <div class="video-card">
+      <div class="thumb">${catEmoji[v.cat] || '▶️'}</div>
+      <div class="card-body">
+        <div class="card-title">${esc(v.title)}</div>
+        <div class="card-row">
+          <span class="cat-badge">${esc(v.cat)}</span>
+          <span class="card-date">${esc(v.date)}</span>
+        </div>
+        ${v.notes ? `<div class="card-notes">${esc(v.notes)}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn-play" onclick="playVideo('${esc(v.id)}')">▶ Play</button>
+          <button class="btn-del" onclick="deleteVideo('${esc(v.id)}')">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function playVideo(id) {
+  const v = load().find(x => x.id === id);
+  if (!v) return;
+  const frame = document.getElementById('video-frame');
+  frame.src = streamUrl(v.fid);
+  frame.style.display = 'block';
+  document.getElementById('no-video-msg').style.display = 'none';
+  document.getElementById('np-title').textContent = v.title;
+  document.getElementById('np-meta').textContent = v.cat + (v.notes ? ' · ' + v.notes : '');
+  document.getElementById('now-playing').style.display = 'block';
+  switchTab('player');
+}
+
+function deleteVideo(id) {
+  const filtered = load().filter(v => v.id !== id);
+  save(filtered);
+  renderLibrary();
+  toast('Video removed');
+}
+
+function addVideo() {
+  const url = document.getElementById('inp-url').value.trim();
+  const title = document.getElementById('inp-title').value.trim();
+  const cat = document.getElementById('inp-cat').value;
+  const notes = document.getElementById('inp-notes').value.trim();
+
+  if (!url || !title) { toast('Please fill in URL and title'); return; }
+  const fid = extractId(url);
+  if (!fid) { toast('Invalid Google Drive link — check the URL'); return; }
+
+  const videos = load();
+  const date = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  videos.unshift({ id: Date.now().toString(), fid, title, cat, notes, date });
+  save(videos);
+
+  document.getElementById('inp-url').value = '';
+  document.getElementById('inp-title').value = '';
+  document.getElementById('inp-notes').value = '';
+  toast('Video saved! ✓');
+  switchTab('library');
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+renderLibrary();
+</script>
+</body>
+</html>
